@@ -1,4 +1,3 @@
-
 // include the library code:
 #include <LiquidCrystal.h>
 #include <SPI.h>
@@ -108,6 +107,163 @@ byte buttons = 0;
 byte moduleToSend = 0; // module to which the next packet will be sent
 boolean sendingPacket = false;
 
+/* EEPROM & step setting UPDATE by Nitram147 (Martin Eršek) */
+
+#include <avr/eeprom.h>
+
+//define EEPROM addresses (they had been choosen randomly, so they can be changed)
+//addresses of preset voltage (incremented by 2 because we will store voltage as unsigned 16bit int)
+//low 8bit are stored on first address, high 8bit are stored on second address 
+#define CH1VOLTAGEADDR 50
+#define CH2VOLTAGEADDR 52
+#define CH3VOLTAGEADDR 54
+#define CH4VOLTAGEADDR 56
+
+//addresses of preset current (again incremented by 2)
+#define CH1CURRENTADDR 60
+#define CH2CURRENTADDR 62
+#define CH3CURRENTADDR 64
+#define CH4CURRENTADDR 66
+
+//adresses of preset steps (voltage + current adjusting step size)
+#define VOLTAGESTEPADDR 70
+#define CURRENTSTEPADDR 71
+
+//adresses of preset fuses
+#define CH1FUSEADDR 80
+#define CH2FUSEADDR 81
+#define CH3FUSEADDR 82
+#define CH4FUSEADDR 83
+
+//variables needed for step adjusting
+//first element in array is unused - because we want to have steps addressed from 1 not 0
+volatile uint8_t voltage_step=1;
+const float voltage_steps[5]={0.0,0.1,0.01,0.001,1.0};
+
+volatile uint8_t current_step=1;
+const float current_steps[5]={0.0,0.1,0.01,0.001,1.0};
+
+//functions
+
+//load preset values from EEPROM during startup time
+void load_preset_values_from_eeprom(){
+
+  uint16_t tmp_ch1_v, tmp_ch2_v, tmp_ch3_v, tmp_ch4_v;
+  uint16_t tmp_ch1_c, tmp_ch2_c, tmp_ch3_c, tmp_ch4_c;
+  uint8_t tmp_voltage_step, tmp_current_step;
+  uint8_t tmp_ch1_f, tmp_ch2_f, tmp_ch3_f, tmp_ch4_f;
+
+  tmp_ch1_v = eeprom_read_word((uint16_t*)CH1VOLTAGEADDR);
+  tmp_ch2_v = eeprom_read_word((uint16_t*)CH2VOLTAGEADDR);
+  tmp_ch3_v = eeprom_read_word((uint16_t*)CH3VOLTAGEADDR);
+  tmp_ch4_v = eeprom_read_word((uint16_t*)CH4VOLTAGEADDR);
+
+  tmp_ch1_c = eeprom_read_word((uint16_t*)CH1CURRENTADDR);
+  tmp_ch2_c = eeprom_read_word((uint16_t*)CH2CURRENTADDR);
+  tmp_ch3_c = eeprom_read_word((uint16_t*)CH3CURRENTADDR);
+  tmp_ch4_c = eeprom_read_word((uint16_t*)CH4CURRENTADDR);
+
+  tmp_voltage_step = eeprom_read_byte((uint8_t*)VOLTAGESTEPADDR);
+  tmp_current_step = eeprom_read_byte((uint8_t*)CURRENTSTEPADDR);
+
+  tmp_ch1_f = eeprom_read_byte((uint8_t*)CH1FUSEADDR);
+  tmp_ch2_f = eeprom_read_byte((uint8_t*)CH2FUSEADDR);
+  tmp_ch3_f = eeprom_read_byte((uint8_t*)CH3FUSEADDR);
+  tmp_ch4_f = eeprom_read_byte((uint8_t*)CH4FUSEADDR);
+
+  if(tmp_ch1_v != 0xFFFF){U1setpoint = (tmp_ch1_v/1000.000);}else{U1setpoint = 0.0;}
+  if(tmp_ch2_v != 0xFFFF){U2setpoint = (tmp_ch2_v/1000.000);}else{U2setpoint = 0.0;}
+  if(tmp_ch3_v != 0xFFFF){U3setpoint = (tmp_ch3_v/1000.000);}else{U3setpoint = 0.0;}
+  if(tmp_ch4_v != 0xFFFF){U4setpoint = (tmp_ch4_v/1000.000);}else{U4setpoint = 0.0;}
+
+  if(tmp_ch1_c != 0xFFFF){I1setpoint = (tmp_ch1_c/1000.000);}else{I1setpoint = 0.0;}
+  if(tmp_ch2_c != 0xFFFF){I2setpoint = (tmp_ch2_c/1000.000);}else{I2setpoint = 0.0;}
+  if(tmp_ch3_c != 0xFFFF){I3setpoint = (tmp_ch3_c/1000.000);}else{I3setpoint = 0.0;}
+  if(tmp_ch4_c != 0xFFFF){I4setpoint = (tmp_ch4_c/1000.000);}else{I4setpoint = 0.0;}
+
+  if(tmp_voltage_step != 0xFF){voltage_step = tmp_voltage_step;}else{tmp_voltage_step = 1;}
+  if(tmp_current_step != 0xFF){current_step = tmp_current_step;}else{tmp_current_step = 1;}
+
+  if(tmp_ch1_f != 0xFF){if(tmp_ch1_f == 1){Fuse1Ena = true;}else{Fuse1Ena = false;}}else{Fuse1Ena = false;}
+  if(tmp_ch2_f != 0xFF){if(tmp_ch2_f == 1){Fuse2Ena = true;}else{Fuse2Ena = false;}}else{Fuse2Ena = false;}
+  if(tmp_ch3_f != 0xFF){if(tmp_ch3_f == 1){Fuse3Ena = true;}else{Fuse3Ena = false;}}else{Fuse3Ena = false;}
+  if(tmp_ch4_f != 0xFF){if(tmp_ch4_f == 1){Fuse4Ena = true;}else{Fuse4Ena = false;}}else{Fuse4Ena = false;}
+
+}
+
+//parameter is for saving EEPROM deprecation - we don't need to rewrite unchanged step
+//parameter 1 for voltage, 2 for current
+void save_steps_into_eeprom(uint8_t tmp_which_step){
+
+  if(tmp_which_step == 1){
+    eeprom_write_byte((uint8_t*)VOLTAGESTEPADDR,voltage_step);
+  }else if(tmp_which_step == 2){
+    eeprom_write_byte((uint8_t*)CURRENTSTEPADDR, current_step);
+  }
+
+}
+
+//save voltage or current value to EEPROM depending on parameters
+//tmp_which_value => 1 for voltage; 2 for current
+//tmp_which_channel => number of channel (1-4)
+void save_values_into_eeprom(uint8_t tmp_which_value, uint8_t tmp_which_channel){
+  if(tmp_which_value == 1){
+
+    uint16_t tmp_ch1_v, tmp_ch2_v, tmp_ch3_v, tmp_ch4_v;
+
+    if(tmp_which_channel == 1){tmp_ch1_v = U1setpoint * 1000;eeprom_write_word((uint16_t*)CH1VOLTAGEADDR, tmp_ch1_v);}
+    else if(tmp_which_channel == 2){tmp_ch2_v = U2setpoint * 1000;eeprom_write_word((uint16_t*)CH2VOLTAGEADDR, tmp_ch2_v);}
+    else if(tmp_which_channel == 3){tmp_ch3_v = U3setpoint * 1000;eeprom_write_word((uint16_t*)CH3VOLTAGEADDR, tmp_ch3_v);}
+    else if(tmp_which_channel == 4){tmp_ch4_v = U4setpoint * 1000;eeprom_write_word((uint16_t*)CH4VOLTAGEADDR, tmp_ch4_v);}
+
+  }else if(tmp_which_value == 2){
+
+    uint16_t tmp_ch1_c, tmp_ch2_c, tmp_ch3_c, tmp_ch4_c;
+
+    if(tmp_which_channel == 1){tmp_ch1_c = I1setpoint * 1000;eeprom_write_word((uint16_t*)CH1CURRENTADDR, tmp_ch1_c);}
+    else if(tmp_which_channel == 2){tmp_ch2_c = I2setpoint * 1000;eeprom_write_word((uint16_t*)CH2CURRENTADDR, tmp_ch2_c);}
+    else if(tmp_which_channel == 3){tmp_ch3_c = I3setpoint * 1000;eeprom_write_word((uint16_t*)CH3CURRENTADDR, tmp_ch3_c);}
+    else if(tmp_which_channel == 4){tmp_ch4_c = I4setpoint * 1000;eeprom_write_word((uint16_t*)CH4CURRENTADDR, tmp_ch4_c);}
+
+  }
+}
+
+//parameter = channel of fuse
+void save_fuses_into_eeprom(uint8_t tmp_which){
+
+  uint8_t tmp_state_of_fuse;
+
+  if(tmp_which == 1){if(Fuse1Ena){tmp_state_of_fuse=1;}else{tmp_state_of_fuse=0;}eeprom_write_byte((uint8_t*)CH1FUSEADDR, tmp_state_of_fuse);}
+  else if(tmp_which == 2){if(Fuse2Ena){tmp_state_of_fuse=1;}else{tmp_state_of_fuse=0;}eeprom_write_byte((uint8_t*)CH2FUSEADDR, tmp_state_of_fuse);}
+  else if(tmp_which == 3){if(Fuse3Ena){tmp_state_of_fuse=1;}else{tmp_state_of_fuse=0;}eeprom_write_byte((uint8_t*)CH3FUSEADDR, tmp_state_of_fuse);}
+  else if(tmp_which == 4){if(Fuse4Ena){tmp_state_of_fuse=1;}else{tmp_state_of_fuse=0;}eeprom_write_byte((uint8_t*)CH4FUSEADDR, tmp_state_of_fuse);}
+
+}
+
+//because of mistake in schematic (encoder button connected to ADC input instead of I/O pin)
+void encoder_button_init(){
+  ADMUX = (1<<MUX2) | (1<<MUX1) | (1<<MUX0) | (1<<REFS0);
+  ADCSRA = (1<<ADEN) | (1<<ADSC) | (1<<ADATE) | (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);
+}
+
+//return true when pressed
+static uint8_t encoder_button_pressed(){
+  return (ADC < 512);
+}
+
+//adjust step if we are in setting mode & encoder button is pressed
+void encoder_check_for_adding_of_step(){
+  if(encoder_button_pressed()){
+    if(SettingU){if(voltage_step<4){voltage_step++;}else{voltage_step=1;}save_steps_into_eeprom(1);}
+    else if(SettingI){if(current_step<4){current_step++;}else{current_step=1;}save_steps_into_eeprom(2);}
+    //wait for encoder button release
+    while(encoder_button_pressed());
+  }
+}
+
+/* ---------------/- UPDATE -/---------------*/
+
+
 void setup() { 
   // put your setup code here, to run once:
   DDRD = 0b00010000;
@@ -131,7 +287,12 @@ void setup() {
   // initialize pin change interrupt for encoder
     PCMSK2 = (1<<PCINT2);
     PCICR = (1<<PCIE2);
-    
+  
+  /*     UPDATE     */  
+  load_preset_values_from_eeprom();
+  encoder_button_init();
+  /* -/- UPDATE -/- */
+
   sei(); //enable interrupts
    
   // initialize SPI:
@@ -201,11 +362,13 @@ ISR(PCINT2_vect)
   {
    if (EncBcur == true) 
     { // decrement
-      EncIncrement = -0.1;
+
+      EncIncrement = -1;
     }
     else
     { // increment
-      EncIncrement = +0.1;
+
+      EncIncrement = +1;
     }
   }
 
@@ -592,26 +755,26 @@ void setVoltageCurrentFuse(){
     {
       if (Ch1SetActive == true)
       {
-        if ((U1setpoint + EncIncrement <= Umax) && (U1setpoint + EncIncrement >= Umin)) // check min/max
-        {U1setpoint = U1setpoint + EncIncrement;}
+        if ((U1setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U1setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
+        {U1setpoint = U1setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,1);}
       }
       
       if (Ch2SetActive == true)
       {
-        if ((U2setpoint + EncIncrement <= Umax) && (U2setpoint + EncIncrement >= Umin)) // check min/max
-        {U2setpoint = U2setpoint + EncIncrement;}
+        if ((U2setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U2setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
+        {U2setpoint = U2setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,2);}
       }
 
       if (Ch3SetActive == true)
       {
-        if ((U3setpoint + EncIncrement <= Umax) && (U3setpoint + EncIncrement >= Umin)) // check min/max
-        {U3setpoint = U3setpoint + EncIncrement;}
+        if ((U3setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U3setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
+        {U3setpoint = U3setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,3);}
       }
       
       if (Ch4SetActive == true)
       {
-        if ((U4setpoint + EncIncrement <= Umax) && (U4setpoint + EncIncrement >= Umin)) // check min/max
-        {U4setpoint = U4setpoint + EncIncrement;}
+        if ((U4setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U4setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
+        {U4setpoint = U4setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,4);}
       }
       EncIncrement = 0.0;
     }
@@ -620,23 +783,23 @@ void setVoltageCurrentFuse(){
     {
       if (Ch1SetActive == true)
       {
-        if ((I1setpoint + EncIncrement <= Imax) && (I1setpoint + EncIncrement >= Imin)) // check min/max
-        {I1setpoint = I1setpoint + EncIncrement;}
+        if ((I1setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I1setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
+        {I1setpoint = I1setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,1);}
       }
       if (Ch2SetActive == true)
       {
-        if ((I2setpoint + EncIncrement <= Imax) && (I2setpoint + EncIncrement >= Imin)) // check min/max
-        {I2setpoint = I2setpoint + EncIncrement;}
+        if ((I2setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I2setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
+        {I2setpoint = I2setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,2);}
       }
       if (Ch3SetActive == true)
       {
-        if ((I3setpoint + EncIncrement <= Imax) && (I3setpoint + EncIncrement >= Imin)) // check min/max
-        {I3setpoint = I3setpoint + EncIncrement;}
+        if ((I3setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I3setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
+        {I3setpoint = I3setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,3);}
       }
       if (Ch4SetActive == true)
       {
-        if ((I4setpoint + EncIncrement <= Imax) && (I4setpoint + EncIncrement >= Imin)) // check min/max
-        {I4setpoint = I4setpoint + EncIncrement;}
+        if ((I4setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I4setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
+        {I4setpoint = I4setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,4);}
       }
       
       EncIncrement = 0.0; // clear the latest increment
@@ -647,30 +810,30 @@ void setVoltageCurrentFuse(){
       if (Ch1SetActive == true)
       {
         if (EncIncrement > 0.0) // enable fuse
-        {Fuse1Ena = true;}
+        {Fuse1Ena = true;save_fuses_into_eeprom(1);}
         if (EncIncrement < 0.0) // disable fuse
-        {Fuse1Ena = false;}
+        {Fuse1Ena = false;save_fuses_into_eeprom(1);}
       }
       if (Ch2SetActive == true)
       {
         if (EncIncrement > 0.0) // enable fuse
-        {Fuse2Ena = true;}
+        {Fuse2Ena = true;save_fuses_into_eeprom(2);}
         if (EncIncrement < 0.0) // disable fuse
-        {Fuse2Ena = false;}
+        {Fuse2Ena = false;save_fuses_into_eeprom(2);}
       }      
       if (Ch3SetActive == true)
       {
         if (EncIncrement > 0.0) // enable fuse
-        {Fuse3Ena = true;}
+        {Fuse3Ena = true;save_fuses_into_eeprom(3);}
         if (EncIncrement < 0.0) // disable fuse
-        {Fuse3Ena = false;}
+        {Fuse3Ena = false;save_fuses_into_eeprom(3);}
       }
       if (Ch4SetActive == true)
       {
         if (EncIncrement > 0.0) // enable fuse
-        {Fuse4Ena = true;}
+        {Fuse4Ena = true;save_fuses_into_eeprom(4);}
         if (EncIncrement < 0.0) // disable fuse
-        {Fuse4Ena = false;}
+        {Fuse4Ena = false;save_fuses_into_eeprom(4);}
       }     
       EncIncrement = 0.0; // clear the used-up increment
 
@@ -683,6 +846,9 @@ void setVoltageCurrentFuse(){
 // process keyboard
 
 void keyboard() {
+
+  encoder_check_for_adding_of_step();
+
   // key Channel 1
     if ((buttons & (1 << button1)) != 0)  // button1 depressed
     {     
