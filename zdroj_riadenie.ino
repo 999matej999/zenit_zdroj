@@ -211,19 +211,19 @@ void save_values_into_eeprom(uint8_t tmp_which_value, uint8_t tmp_which_channel)
 
     uint16_t tmp_ch1_v, tmp_ch2_v, tmp_ch3_v, tmp_ch4_v;
 
-    if(tmp_which_channel == 1){tmp_ch1_v = U1setpoint * 1000;eeprom_write_word((uint16_t*)CH1VOLTAGEADDR, tmp_ch1_v);}
-    else if(tmp_which_channel == 2){tmp_ch2_v = U2setpoint * 1000;eeprom_write_word((uint16_t*)CH2VOLTAGEADDR, tmp_ch2_v);}
-    else if(tmp_which_channel == 3){tmp_ch3_v = U3setpoint * 1000;eeprom_write_word((uint16_t*)CH3VOLTAGEADDR, tmp_ch3_v);}
-    else if(tmp_which_channel == 4){tmp_ch4_v = U4setpoint * 1000;eeprom_write_word((uint16_t*)CH4VOLTAGEADDR, tmp_ch4_v);}
+    if(tmp_which_channel == 1){tmp_ch1_v = (uint16_t)(U1setpoint * 1000);eeprom_write_word((uint16_t*)CH1VOLTAGEADDR, tmp_ch1_v);}
+    else if(tmp_which_channel == 2){tmp_ch2_v = (uint16_t)(U2setpoint * 1000);eeprom_write_word((uint16_t*)CH2VOLTAGEADDR, tmp_ch2_v);}
+    else if(tmp_which_channel == 3){tmp_ch3_v = (uint16_t)(U3setpoint * 1000);eeprom_write_word((uint16_t*)CH3VOLTAGEADDR, tmp_ch3_v);}
+    else if(tmp_which_channel == 4){tmp_ch4_v = (uint16_t)(U4setpoint * 1000);eeprom_write_word((uint16_t*)CH4VOLTAGEADDR, tmp_ch4_v);}
 
   }else if(tmp_which_value == 2){
 
     uint16_t tmp_ch1_c, tmp_ch2_c, tmp_ch3_c, tmp_ch4_c;
 
-    if(tmp_which_channel == 1){tmp_ch1_c = I1setpoint * 1000;eeprom_write_word((uint16_t*)CH1CURRENTADDR, tmp_ch1_c);}
-    else if(tmp_which_channel == 2){tmp_ch2_c = I2setpoint * 1000;eeprom_write_word((uint16_t*)CH2CURRENTADDR, tmp_ch2_c);}
-    else if(tmp_which_channel == 3){tmp_ch3_c = I3setpoint * 1000;eeprom_write_word((uint16_t*)CH3CURRENTADDR, tmp_ch3_c);}
-    else if(tmp_which_channel == 4){tmp_ch4_c = I4setpoint * 1000;eeprom_write_word((uint16_t*)CH4CURRENTADDR, tmp_ch4_c);}
+    if(tmp_which_channel == 1){tmp_ch1_c = (uint16_t)(I1setpoint * 1000);eeprom_write_word((uint16_t*)CH1CURRENTADDR, tmp_ch1_c);}
+    else if(tmp_which_channel == 2){tmp_ch2_c = (uint16_t)(I2setpoint * 1000);eeprom_write_word((uint16_t*)CH2CURRENTADDR, tmp_ch2_c);}
+    else if(tmp_which_channel == 3){tmp_ch3_c = (uint16_t)(I3setpoint * 1000);eeprom_write_word((uint16_t*)CH3CURRENTADDR, tmp_ch3_c);}
+    else if(tmp_which_channel == 4){tmp_ch4_c = (uint16_t)(I4setpoint * 1000);eeprom_write_word((uint16_t*)CH4CURRENTADDR, tmp_ch4_c);}
 
   }
 }
@@ -755,27 +755,48 @@ void setVoltageCurrentFuse(){
     {
       if (Ch1SetActive == true)
       {
-        if ((U1setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U1setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
-        {U1setpoint = U1setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,1);}
+        U1setpoint = U1setpoint + (EncIncrement*voltage_steps[voltage_step]);
+        if(U1setpoint > Umax){
+            U1setpoint = Umax;
+        }else if(U1setpoint < Umin){
+          U1setpoint = Umin;
+        }
+        save_values_into_eeprom(1,1);
       }
       
       if (Ch2SetActive == true)
       {
-        if ((U2setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U2setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
-        {U2setpoint = U2setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,2);}
+        U2setpoint = U2setpoint + (EncIncrement*voltage_steps[voltage_step]);
+        if(U2setpoint > Umax){
+            U2setpoint = Umax;
+        }else if(U2setpoint < Umin){
+          U2setpoint = Umin;
+        }
+        save_values_into_eeprom(1,2);
       }
 
       if (Ch3SetActive == true)
       {
-        if ((U3setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U3setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
-        {U3setpoint = U3setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,3);}
+        U3setpoint = U3setpoint + (EncIncrement*voltage_steps[voltage_step]);
+        if(U3setpoint > Umax){
+            U3setpoint = Umax;
+        }else if(U3setpoint < Umin){
+          U3setpoint = Umin;
+        }
+        save_values_into_eeprom(1,3);
       }
       
       if (Ch4SetActive == true)
       {
-        if ((U4setpoint + (EncIncrement*voltage_steps[voltage_step]) <= Umax) && (U4setpoint + (EncIncrement*voltage_steps[voltage_step]) >= Umin)) // check min/max
-        {U4setpoint = U4setpoint + (EncIncrement*voltage_steps[voltage_step]);save_values_into_eeprom(1,4);}
+        U4setpoint = U4setpoint + (EncIncrement*voltage_steps[voltage_step]);
+        if(U4setpoint > Umax){
+            U4setpoint = Umax;
+        }else if(U4setpoint < Umin){
+          U4setpoint = Umin;
+        }
+        save_values_into_eeprom(1,4);
       }
+
       EncIncrement = 0.0;
     }
     
@@ -783,23 +804,43 @@ void setVoltageCurrentFuse(){
     {
       if (Ch1SetActive == true)
       {
-        if ((I1setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I1setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
-        {I1setpoint = I1setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,1);}
+        I1setpoint = I1setpoint + (EncIncrement*current_steps[current_step]);
+        if(I1setpoint > Imax){
+            I1setpoint = Imax;
+        }else if(I1setpoint < Imin){
+          I1setpoint = Imin;
+        }
+        save_values_into_eeprom(2,1);
       }
       if (Ch2SetActive == true)
       {
-        if ((I2setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I2setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
-        {I2setpoint = I2setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,2);}
+        I2setpoint = I2setpoint + (EncIncrement*current_steps[current_step]);
+        if(I2setpoint > Imax){
+            I2setpoint = Imax;
+        }else if(I2setpoint < Imin){
+          I2setpoint = Imin;
+        }
+        save_values_into_eeprom(2,2);
       }
       if (Ch3SetActive == true)
       {
-        if ((I3setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I3setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
-        {I3setpoint = I3setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,3);}
+        I3setpoint = I3setpoint + (EncIncrement*current_steps[current_step]);
+        if(I3setpoint > Imax){
+            I3setpoint = Imax;
+        }else if(I3setpoint < Imin){
+          I3setpoint = Imin;
+        }
+        save_values_into_eeprom(2,3);
       }
       if (Ch4SetActive == true)
       {
-        if ((I4setpoint + (EncIncrement*current_steps[current_step]) <= Imax) && (I4setpoint + (EncIncrement*current_steps[current_step]) >= Imin)) // check min/max
-        {I4setpoint = I4setpoint + (EncIncrement*current_steps[current_step]);save_values_into_eeprom(2,4);}
+        I4setpoint = I4setpoint + (EncIncrement*current_steps[current_step]);
+        if(I4setpoint > Imax){
+            I4setpoint = Imax;
+        }else if(I4setpoint < Imin){
+          I4setpoint = Imin;
+        }
+        save_values_into_eeprom(2,4);
       }
       
       EncIncrement = 0.0; // clear the latest increment
