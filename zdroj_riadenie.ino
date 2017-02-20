@@ -262,6 +262,57 @@ void encoder_check_for_adding_of_step(){
 }
 
 /* ---------------/- UPDATE -/---------------*/
+/* Display cursor update by Nitram147 (Martin Eršek) */
+
+//0 - off; anything else - on
+void change_cursor(uint8_t tmp_state){if(tmp_state){lcd.cursor();}else{lcd.noCursor();}}
+
+//goto x location on display
+void display_goto_x(uint8_t tmp_x){
+
+  uint8_t tmp_y=0;
+
+  if(Ch1SetActive){tmp_y=0;
+  }else if(Ch2SetActive){tmp_y=1;
+  }else if(Ch3SetActive){tmp_y=2;
+  }else if(Ch4SetActive){tmp_y=3;}
+
+  lcd.setCursor(tmp_x, tmp_y);
+}
+
+//find if cursor should or shouldn't be enabled
+//if yes navigate to the right position based on actual adjusting step & active setting mode
+void check_for_cursor(){
+
+  if((SettingI || SettingU || SettingFuse) && (Ch1SetActive || Ch2SetActive || Ch3SetActive || Ch4SetActive)){
+ 
+    change_cursor(1);
+
+    if(SettingU){
+
+      if(voltage_step == 1){display_goto_x(3);}
+      else if(voltage_step == 2){display_goto_x(4);}
+      else if(voltage_step == 3){display_goto_x(5);}
+      else if(voltage_step == 4){display_goto_x(1);}
+
+    }else if(SettingI){
+
+      if(current_step == 1){display_goto_x(10);}
+      else if(current_step == 2){display_goto_x(11);}
+      else if(current_step == 3){display_goto_x(12);}
+      else if(current_step == 4){display_goto_x(8);}
+
+    }else if(SettingFuse){
+      display_goto_x(15);
+    }
+
+  }else{
+    change_cursor(0);
+  }
+
+}
+
+/* --------------/- UPDATE -/----------------*/
 
 
 void setup() { 
@@ -399,7 +450,9 @@ void loop() {
     if (stringComplete) { decodePacket(); }  // if packet received decode it
     
     DisplayData();  // prepare and write all data to the LCD screen
-    
+
+    check_for_cursor();
+
 } // end main program
 
 
@@ -683,6 +736,9 @@ void sendAllOff()
   
   // prepare text for display
 void DisplayData(){
+
+change_cursor(0); //temporary disable cursor while writing on to display
+
 float U = 0.0; // temporary variable to hold U value for display
 float I = 0.0; // temporary variable to hold I value for display
 float P = 0.0; // temporary variable to hold P value for display
@@ -1051,3 +1107,7 @@ void keyboard() {
     }
     
 } // end keyboard routine
+
+
+
+
