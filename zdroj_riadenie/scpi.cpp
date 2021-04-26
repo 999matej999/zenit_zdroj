@@ -280,8 +280,142 @@ void scpi_parse(RECEIVER r)
 	}
 	else if(does_string_start_with(tmp_string, "MEAS"))
 	{
-		//tmp_string = remove_string_from_string(tmp_string, "MEAS");
 		tmp_string = remove_to_separator(tmp_string, ':');
+		if(does_string_start_with(tmp_string, "ALL"))
+		{
+			tmp_string = remove_to_separator(tmp_string, ':');
+		
+			if(does_string_start_with(tmp_string, "DC"))
+			{
+				char tmp_separators[] = {' ', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			}
+			else
+			{
+				tmp_string = buffer + 1;
+				char tmp_separators[] = {' ', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			}
+
+			if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+			{
+				++tmp_string;
+
+				CHANNEL ch = string_to_channel(tmp_string);
+				if(ch == CHANNEL::NONE) ch = selected;
+
+				float valueU = 0, valueI = 0;
+				switch(ch)
+				{
+					case CHANNEL::CH1: valueU = Ch1Enabled ? U1meas : 0; valueI = Ch1Enabled ? I1meas : 0; break;
+					case CHANNEL::CH2: valueU = Ch2Enabled ? U2meas : 0; valueI = Ch2Enabled ? I2meas : 0; break;
+					case CHANNEL::CH3: valueU = Ch3Enabled ? U3meas : 0; valueI = Ch3Enabled ? I3meas : 0; break;
+					case CHANNEL::CH4: valueU = Ch4Enabled ? U4meas : 0; valueI = Ch4Enabled ? I4meas : 0; break;
+					default: break;
+				}
+
+				if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+				{
+					mySerial.print(valueU, 3);
+					mySerial.print(",");
+					mySerial.println(valueI, 3);
+				}
+			}
+		}
+		else if(does_string_start_with(tmp_string, "CURR"))
+		{
+			tmp_string = remove_to_separator(tmp_string, ':');
+		
+			if(does_string_start_with(tmp_string, "DC"))
+			{
+				char tmp_separators[] = {' ', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			}
+			else
+			{
+				tmp_string = buffer + 1;
+				char tmp_separators[] = {' ', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			}
+
+			if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+			{
+				++tmp_string;
+
+				CHANNEL ch = string_to_channel(tmp_string);
+				if(ch == CHANNEL::NONE) ch = selected;
+
+				float valueI = 0;
+				switch(ch)
+				{
+					case CHANNEL::CH1: valueI = Ch1Enabled ? I1meas : 0; break;
+					case CHANNEL::CH2: valueI = Ch2Enabled ? I2meas : 0; break;
+					case CHANNEL::CH3: valueI = Ch3Enabled ? I3meas : 0; break;
+					case CHANNEL::CH4: valueI = Ch4Enabled ? I4meas : 0; break;
+					default: break;
+				}
+
+				if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+				{
+					mySerial.println(valueI, 3);
+				}
+			}
+		}
+		else
+		{
+			tmp_string = buffer + 1;
+
+			if(does_string_start_with(tmp_string, "MEAS"))
+			{
+				char tmp_separators[] = {':', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+				if(*tmp_string == '?' || *tmp_string == ':') ++tmp_string;
+			}
+
+			if(does_string_start_with(tmp_string, "VOLT"))
+			{
+				char tmp_separators[] = {':', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+				if(*tmp_string == '?' || *tmp_string == ':') ++tmp_string;
+			}
+		
+			if(does_string_start_with(tmp_string, "DC"))
+			{
+				char tmp_separators[] = {':', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+				if(*tmp_string == '?' || *tmp_string == ':') ++tmp_string;
+			}
+
+			if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+			{
+				if(*tmp_string == ' ') ++tmp_string;
+
+				CHANNEL ch = string_to_channel(tmp_string);
+				if(ch == CHANNEL::NONE) ch = selected;
+
+				float valueU = 0;
+				switch(ch)
+				{
+					case CHANNEL::CH1: valueU = Ch1Enabled ? U1meas : 0; break;
+					case CHANNEL::CH2: valueU = Ch2Enabled ? U2meas : 0; break;
+					case CHANNEL::CH3: valueU = Ch3Enabled ? U3meas : 0; break;
+					case CHANNEL::CH4: valueU = Ch4Enabled ? U4meas : 0; break;
+					default: break;
+				}
+
+				if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+				{
+					mySerial.println(valueU, 3);
+				}
+			}
+		}
 	}
 	else if(does_string_start_with(tmp_string, "OUTP"))
 	{
