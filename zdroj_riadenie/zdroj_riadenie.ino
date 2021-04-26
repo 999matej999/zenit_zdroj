@@ -9,6 +9,7 @@ Serial.println(msg2)
 #include <LiquidCrystal.h>
 #include <SPI.h>
 #include "variables.h"
+#include "scpi.h"
 
 #define BUFFER_SIZE 50
 SoftwareSerial mySerial(5, 6);

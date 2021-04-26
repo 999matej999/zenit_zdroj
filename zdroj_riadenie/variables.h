@@ -1,9 +1,6 @@
 #ifndef __VARIABLES_H__
 #define __VARIABLES_H__
 
-#include "variables.h"
-
-
 extern float U1setpoint; // channel 1 voltage setpoint
 extern float U2setpoint; 
 extern float U3setpoint; 
