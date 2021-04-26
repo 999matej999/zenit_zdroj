@@ -4,14 +4,7 @@
 
 enum class CHANNEL { CH1 = 0, CH2, CH3, CH4, ALL, NONE, ERR };
 
-enum class CMD_TYPE { COMMON = 0, APPLY, INSTRUMENT, MEASURE, OUTPUT, SOURCE, SYSTEM };
-
-enum class ARGUMENT_TYPE { NONE, VALUE, CHANNEL, INTEGER, LOGIC };
-
 CHANNEL selected = CHANNEL::CH1;
-
-extern void sendAllOn();
-extern void sendAllOff();
 
 uint8_t compare_strings(char *tmp_first, const char *tmp_second){
 	return (strcmp(tmp_first, tmp_second) == 0);
@@ -639,7 +632,7 @@ void scpi_parse(RECEIVER r)
 									case CHANNEL::CH2: Ch2Enabled = state; break;
 									case CHANNEL::CH3: Ch3Enabled = state; break;
 									case CHANNEL::CH4: Ch4Enabled = state; break;
-									case CHANNEL::ALL: OutEnabled = state; break;
+									case CHANNEL::ALL: OutEnabled = state; updateOutEnabled = true; break;
 									default: break;
 								}
 							}
@@ -651,15 +644,9 @@ void scpi_parse(RECEIVER r)
 									case CHANNEL::CH2: Ch2Enabled = state; Fuse2Reset = true; break;
 									case CHANNEL::CH3: Ch3Enabled = state; Fuse3Reset = true; break;
 									case CHANNEL::CH4: Ch4Enabled = state; Fuse4Reset = true; break;
-									case CHANNEL::ALL: OutEnabled = state; break;
+									case CHANNEL::ALL: OutEnabled = state; updateOutEnabled = true; break;
 									default: break;
 								}
-							}
-
-							if(ch == CHANNEL::ALL)
-							{
-								if(OutEnabled) sendAllOn(); // switch on all outputs
-								else sendAllOff(); // switch off all outputs
 							}
 
 							if(ch != CHANNEL::ERR)

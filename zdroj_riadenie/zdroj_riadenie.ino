@@ -312,6 +312,8 @@ void setup() {
   
   // set up the LCD's number of columns and rows:
   lcd.begin(20, 4);
+
+  updateOutEnabled = true;
 }
 
 
@@ -397,7 +399,7 @@ void loop() {
       else
        { moduleToSend = 0; }
     //lcd.setCursor(0, 0); lcd.print(moduleToSend);  
-    
+
     if(!rw_lock) keyboard();    // keyboard routine. Check if any key was depressed and process it
 
     if(!rw_lock) setVoltageCurrentFuse(); // check if setting mode is active, if yes, modify the trimmed parameter
@@ -426,6 +428,12 @@ void loop() {
     }
   }
 
+  if(updateOutEnabled)
+    {
+      updateOutEnabled = false;
+      if(OutEnabled) sendAllOn(); // switch on all outputs
+      else sendAllOff(); // switch off all outputs
+    }
 } // end main program
 
 
@@ -516,6 +524,7 @@ void sendAllOn()
         // *F module address
         // VZ all outputs ON, VV all outputs OFF
         
+          delay(50);
           Serial.print("*F");
           Serial.println("VZ");
           delay(30);
@@ -529,6 +538,7 @@ void sendAllOff()
         // *F module address
         // VZ all outputs ON, VV all outputs OFF
         
+          delay(50);
           Serial.print("*F"); // addr for all is *F
           Serial.println("VV");
           delay(30);
@@ -1110,10 +1120,7 @@ void keyboard() {
         delay(1); //wait until the button is released
       }
        OutEnabled = !OutEnabled; // enable/disable output
-       if (OutEnabled) 
-         {sendAllOn();}  // switch on all outputs
-       else 
-         {sendAllOff();} // switch off all outputs
+       updateOutEnabled = true;
     }
     
 } // end keyboard routine

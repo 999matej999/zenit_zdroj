@@ -47,6 +47,7 @@ extern bool Ch3Enabled;
 extern bool Ch4Enabled;
 
 extern bool OutEnabled; // general power supply output ON/OFF
+extern bool updateOutEnabled;
 
 extern bool Ch1SetActive; // setting of U or I, channel 1 active
 extern bool Ch2SetActive;

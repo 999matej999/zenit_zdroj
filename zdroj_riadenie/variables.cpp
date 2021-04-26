@@ -35,6 +35,7 @@ bool Ch3Enabled = false;
 bool Ch4Enabled = false;
 
 bool OutEnabled = false; // general power supply output ON/OFF
+bool updateOutEnabled = false; // flag to switch ON/OFF all outputs
 
 bool Ch1SetActive = false; // setting of U or I, channel 1 active
 bool Ch2SetActive = false;
