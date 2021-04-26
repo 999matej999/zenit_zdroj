@@ -8,6 +8,9 @@ Serial.println(msg2)
 #include <LiquidCrystal.h>
 #include <SPI.h>
 
+
+#define LOAD 4
+
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(15, 14, 16, 17, 18, 19);
 
@@ -328,8 +331,8 @@ void check_for_cursor(){
 
 void setup() { 
   // put your setup code here, to run once:
-  DDRD = 0b00010000;
-  PORTD |= 0b00010000; // LOAD to one
+  pinMode(LOAD, OUTPUT);
+  digitalWrite(LOAD, HIGH);
 
   // initialize timer 2 for keyboard sensing interrupt
   cli();//stop interrupts
@@ -402,8 +405,8 @@ ISR(TIMER2_COMPA_vect)
     blinkphase = !blinkphase;
     
     // load the parallel to serial register
-    PORTD &= 0b11101111; // LOAD to zero        
-    PORTD |= 0b00010000; // LOAD to one
+    digitalWrite(LOAD, LOW);
+    digitalWrite(LOAD, HIGH);
     
     SPIrcv = SPI.transfer16(SPItx);
     buttons = highByte(SPIrcv);
