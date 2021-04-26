@@ -86,6 +86,23 @@ void scpi_parse(RECEIVER r)
 	char *tmp_string = buffer + 1;
 	//char *tmp_out[BUFFER_SIZE] = {};
 
+	if(does_string_start_with(tmp_string, "SYST"))
+	{
+		tmp_string = remove_to_separator(tmp_string, ':');
+		if(does_string_start_with(tmp_string, "LOC"))
+		{
+			control = CONTROL::LOCAL;
+			mySerial.println("OK");
+		}
+		else if(does_string_start_with(tmp_string, "REM"))
+		{
+			control = CONTROL::REMOTE;
+			mySerial.println("OK");
+		}
+	}
+
+	if(control == CONTROL::LOCAL) return;
+
 	if(does_string_start_with(buffer, "*IDN?"))
 	{
 		mySerial.println(DEVICE_NAME);
@@ -123,16 +140,6 @@ void scpi_parse(RECEIVER r)
 					}
 				}
 			}
-		}
-		else if(does_string_start_with(tmp_string, "LOC"))
-		{
-			control = CONTROL::LOCAL;
-			mySerial.println("OK");
-		}
-		else if(does_string_start_with(tmp_string, "REM"))
-		{
-			control = CONTROL::REMOTE;
-			mySerial.println("OK");
 		}
 		else if(does_string_start_with(tmp_string, "RWL"))
 		{
