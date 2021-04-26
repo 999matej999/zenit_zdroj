@@ -1,3 +1,9 @@
+String msg2;
+#define DBG(X) msg2 = "-";\
+msg2 += X;\
+msg2 += "-";\
+Serial.println(msg2)
+
 // include the library code:
 #include <LiquidCrystal.h>
 #include <SPI.h>
@@ -89,6 +95,11 @@ boolean Fuse1Trip = false; // channel 1 electronic fuse readback
 boolean Fuse2Trip = false;
 boolean Fuse3Trip = false;
 boolean Fuse4Trip = false;
+
+boolean Fuse1Reset = false; // channel 1 electronic fuse readback
+boolean Fuse2Reset = false;
+boolean Fuse3Reset = false;
+boolean Fuse4Reset = false;
 
 boolean blinkphase = false; // internal for LED routine
 
@@ -487,11 +498,12 @@ void sendSetpoint(byte Addr)
           float Itmp = 0;
           int fuse = 0;
           int output = 0;
+          int fuseReset = 0;
           switch (Addr) {
-          case 0: {Utmp = U1setpoint; Itmp = I1setpoint; fuse = Fuse1Ena; output = Ch1Enabled;}  break;
-          case 1: {Utmp = U2setpoint; Itmp = I2setpoint; fuse = Fuse2Ena; output = Ch2Enabled;}  break;
-          case 2: {Utmp = U3setpoint; Itmp = I3setpoint; fuse = Fuse3Ena; output = Ch3Enabled;}  break;
-          case 3: {Utmp = U4setpoint; Itmp = I4setpoint; fuse = Fuse4Ena; output = Ch4Enabled;}  break;
+          case 0: {Utmp = U1setpoint; Itmp = I1setpoint; fuse = Fuse1Ena; output = Ch1Enabled; fuseReset = Fuse1Reset;}  break;
+          case 1: {Utmp = U2setpoint; Itmp = I2setpoint; fuse = Fuse2Ena; output = Ch2Enabled; fuseReset = Fuse2Reset;}  break;
+          case 2: {Utmp = U3setpoint; Itmp = I3setpoint; fuse = Fuse3Ena; output = Ch3Enabled; fuseReset = Fuse3Reset;}  break;
+          case 3: {Utmp = U4setpoint; Itmp = I4setpoint; fuse = Fuse4Ena; output = Ch4Enabled; fuseReset = Fuse4Reset;}  break;
           default: break;
           }
         
@@ -512,7 +524,15 @@ void sendSetpoint(byte Addr)
           //Serial.print('1');
           Serial.print(fuse,1);
           Serial.print('R');
-          Serial.print('0'); // clear fuse
+          Serial.print(fuseReset,1); // clear fuse
+          if(fuseReset == 1)
+          switch (Addr) {
+          case 0: {Fuse1Reset = false;}  break;
+          case 1: {Fuse2Reset = false;}  break;
+          case 2: {Fuse3Reset = false;}  break;
+          case 3: {Fuse4Reset = false;}  break;
+          default: break;
+          }
           Serial.print('U');
           if (Utmp < 10.0) {Serial.print('0');} // add zero to conserve format 00.000
           Serial.print(Utmp,3);
@@ -561,7 +581,7 @@ void sendAllOff()
     else
     {    
       if (Ch1Enabled) {
-        if (Ch1Ilimit) {led1 = red;} else {led1 = green;} // when channel enabled use green if ok, or red if current limiting
+        if (Ch1Ilimit || Fuse1Trip) {led1 = red;} else {led1 = green;} // when channel enabled use green if ok, or red if current over limit
         } 
       else 
         {led1 = none;} // channel not enabled, button led off
@@ -573,7 +593,7 @@ void sendAllOff()
     else
     {    
       if (Ch2Enabled) {
-        if (Ch2Ilimit) {led2 = red;} else {led2 = green;} // when channel enabled use green if ok, or red if current limiting
+        if (Ch2Ilimit || Fuse2Trip) {led2 = red;} else {led2 = green;} // when channel enabled use green if ok, or red if current over limit
         } 
       else 
         {led2 = none;} // channel not enabled, button led off
@@ -585,7 +605,7 @@ void sendAllOff()
     else
     {    
       if (Ch3Enabled) {
-        if (Ch3Ilimit) {led3 = red;} else {led3 = green;} // when channel enabled use green if ok, or red if current limiting
+        if (Ch3Ilimit || Fuse3Trip) {led3 = red;} else {led3 = green;} // when channel enabled use green if ok, or red if current over limit
         } 
       else 
         {led3 = none;} // channel not enabled, button led off    
@@ -597,7 +617,7 @@ void sendAllOff()
     else
     {    
       if (Ch4Enabled) {
-        if (Ch4Ilimit) {led4 = red;} else {led4 = green;} // when channel enabled use green if ok, or red if current limiting
+        if (Ch4Ilimit || Fuse4Trip) {led4 = red;} else {led4 = green;} // when channel enabled use green if ok, or red if current over limit
         } 
       else 
         {led4 = none;} // channel not enabled, button led off    
@@ -663,23 +683,23 @@ void sendAllOff()
         default: break;}          
         } 
 
-       if (inputString.substring(4, 6) == "P1") 
+       if (inputString.substring(4, 6) == "P0") 
         {
           //fuse tripped
         switch (tmpAddr) {
         case 0: Fuse1Trip = true; break;
-        case 1: Fuse1Trip = true; break;
-        case 2: Fuse1Trip = true; break;
-        case 3: Fuse1Trip = true; break;
+        case 1: Fuse2Trip = true; break;
+        case 2: Fuse3Trip = true; break;
+        case 3: Fuse4Trip = true; break;
         default: break;}        } 
         else
         {
           //fuse not tripped
         switch (tmpAddr) {
         case 0: Fuse1Trip = false; break;
-        case 1: Fuse1Trip = false; break;
-        case 2: Fuse1Trip = false; break;
-        case 3: Fuse1Trip = false; break;
+        case 1: Fuse2Trip = false; break;
+        case 2: Fuse3Trip = false; break;
+        case 3: Fuse4Trip = false; break;
         default: break;}          
         } 
     
@@ -728,6 +748,7 @@ void sendAllOff()
    
     }    
     // clear the string:
+    //DBG(inputString);
     inputString = "";
     stringComplete = false;
 
@@ -744,6 +765,7 @@ float I = 0.0; // temporary variable to hold I value for display
 float P = 0.0; // temporary variable to hold P value for display
 boolean fuse = false;
 boolean limit = false;
+boolean trip = false;
 
   for (int riadok=0; riadok <= 3; riadok++){
     switch (riadok) {
@@ -753,7 +775,8 @@ boolean limit = false;
          else
           { U = U1meas; I = I1meas;}  
         fuse = Fuse1Ena; 
-        limit = Ch1Ilimit; 
+        limit = Ch1Ilimit;
+        trip = Fuse1Trip;
         break;
       case 1: 
         if (!Ch2Enabled | Ch2SetActive)
@@ -761,7 +784,8 @@ boolean limit = false;
           else
           {U = U2meas; I = I2meas;} 
         fuse = Fuse2Ena;  
-        limit = Ch2Ilimit; 
+        limit = Ch2Ilimit;
+        trip = Fuse2Trip;
         break;
       case 2: 
         if (!Ch3Enabled | Ch3SetActive)
@@ -769,7 +793,8 @@ boolean limit = false;
           else
           {U = U3meas; I = I3meas;}
         fuse = Fuse3Ena;  
-        limit = Ch3Ilimit; 
+        limit = Ch3Ilimit;
+        trip = Fuse3Trip;
         break;
       case 3: 
         if (!Ch4Enabled | Ch4SetActive) 
@@ -777,7 +802,8 @@ boolean limit = false;
           else
           {U = U4meas; I = I4meas;} 
         fuse = Fuse4Ena;  
-        limit = Ch4Ilimit; 
+        limit = Ch4Ilimit;
+        trip = Fuse4Trip;
         break;
       default: U = 99.9; I = 9.9; break;
       }
@@ -787,14 +813,22 @@ boolean limit = false;
       {lcd.print(" "); lcd.print(U,3); lcd.print("V");}
     else
       {lcd.print(U,3); lcd.print("V");}
-      
+    lcd.print(" ");
+    
     lcd.setCursor(8, riadok); lcd.print(I,3); lcd.print("A");
     
     lcd.setCursor(15, riadok);
-    if (fuse) 
-      {lcd.print("Fu");}
-      else
-      {lcd.print("  ");} 
+    if (fuse) {
+      if (trip) {
+        lcd.print("Tr");
+      }
+      else {
+        lcd.print("Fu");
+      }
+    }
+    else {
+      lcd.print("  ");
+    } 
       
     lcd.setCursor(18, riadok);
     if (limit) 
@@ -943,12 +977,13 @@ void setVoltageCurrentFuse(){
 // process keyboard
 
 void keyboard() {
-
+  
   encoder_check_for_adding_of_step();
-
+  
   // key Channel 1
     if ((buttons & (1 << button1)) != 0)  // button1 depressed
-    {     
+    {
+      DBG("DBG");
       while ((buttons & (1 << button1)) != 0)
       {  
         delay(1); //wait until the button is released
@@ -965,12 +1000,14 @@ void keyboard() {
         {          // U,I setting mode not active, toggle Output enable
           Ch1SetActive = false;
           Ch1Enabled = !Ch1Enabled; // toggle enable status
+          if (!Ch1Enabled) Fuse1Reset = true;
         }
     }
     
     // key Channel 2
     if ((buttons & (1 << button2)) != 0)  
     { 
+      DBG("DBG");
       while ((buttons & (1 << button2)) != 0) 
       {
         delay(1); //wait until the button is released
@@ -985,11 +1022,13 @@ void keyboard() {
         {          // U,I setting mode not active, toggle Output enable
           Ch2SetActive = false;      
           Ch2Enabled = !Ch2Enabled; // toggle enable status
+          if (!Ch2Enabled) Fuse2Reset = true;
         }
     }
 
     if ((buttons & (1 << button3)) != 0)  // key Channel 3
     { 
+      DBG("DBG");
       while ((buttons & (1 << button3)) != 0)
       {
         delay(1); //wait until the button is released
@@ -1004,11 +1043,13 @@ void keyboard() {
         {          // U,I setting mode not active, toggle Output enable
           Ch3SetActive = false;      
           Ch3Enabled = !Ch3Enabled; // toggle enable status
+          if (!Ch3Enabled) Fuse3Reset = true;
         }
     }
 
     if ((buttons & (1 << button4)) != 0)  // key Channel 4
     { 
+      DBG("DBG");
       while ((buttons & (1 << button4)) != 0) 
       {
         delay(1); //wait until the button is released
@@ -1023,11 +1064,13 @@ void keyboard() {
         {          // U,I setting mode not active, toggle Output enable
           Ch4SetActive = false;
           Ch4Enabled = !Ch4Enabled; // toggle enable status
+          if (!Ch4Enabled) Fuse4Reset = true;
         }
     }
 
     if ((buttons & (1 << button5)) != 0)  // key U setpoint
     { 
+      DBG("DBG");
       while ((buttons & (1 << button5)) != 0) 
       {
         delay(1); //wait until the button is released
@@ -1050,6 +1093,7 @@ void keyboard() {
 
     if ((buttons & (1 << button6)) != 0)  // key I setpoint
     { 
+      DBG("DBG");
       while ((buttons & (1 << button6)) != 0) 
       {
         delay(1); //wait until the button is released
@@ -1073,6 +1117,7 @@ void keyboard() {
 
     if ((buttons & (1 << button7)) != 0)  // key Fuse setting
     { 
+      DBG("DBG");
       while ((buttons & (1 << button7)) != 0) 
       {
         delay(1); //wait until the button is released
@@ -1095,6 +1140,7 @@ void keyboard() {
     
     if ((buttons & (1 << button8)) != 0)  // key Out enable
     { 
+      DBG("DBG");
       while ((buttons & (1 << button8)) != 0) 
       {
         delay(1); //wait until the button is released
@@ -1107,7 +1153,6 @@ void keyboard() {
     }
     
 } // end keyboard routine
-
 
 
 
