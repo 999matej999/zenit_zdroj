@@ -5,6 +5,12 @@
 
 #define BUFFER_SIZE 50
 
+enum class CONTROL { LOCAL, REMOTE };
+extern CONTROL control;
+extern bool rw_lock;
+
+extern long baudrate;
+
 extern SoftwareSerial mySerial;
 extern char buffer[];
 extern size_t idx;

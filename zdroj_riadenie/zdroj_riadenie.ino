@@ -304,8 +304,8 @@ void setup() {
    
   // initialize serial:
   Serial.begin(9600); 
-  mySerial.begin(9600);
-  mySerial.println("It works!");
+  mySerial.begin(baudrate); // TODO: SAVE baudrate to EEPROM
+
   // reserve 30 bytes for the inputString:
   inputString.reserve(30);
   tmpString.reserve(6);
@@ -416,8 +416,8 @@ void loop() {
     {
       buffer[idx] = '\0';
       idx = 0;
-
-      mySerial.println(buffer);
+      
+      cmd_arrived(RECEIVER::UART);
     }
     else
     {
