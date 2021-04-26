@@ -653,7 +653,8 @@ void sendAllOff()
         case 1: Fuse2Trip = true; break;
         case 2: Fuse3Trip = true; break;
         case 3: Fuse4Trip = true; break;
-        default: break;}        } 
+        default: break;}
+        }
         else
         {
           //fuse not tripped
@@ -1000,7 +1001,8 @@ void keyboard() {
           Ch1SetActive = false;
           Ch2SetActive = false;
           Ch3SetActive = true;
-          Ch4SetActive = false;         }
+          Ch4SetActive = false;
+        }
         else
         {          // U,I setting mode not active, toggle Output enable
           Ch3SetActive = false;      
