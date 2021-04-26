@@ -100,16 +100,32 @@ CHANNEL string_to_channel(char *tmp_string)
 	else return CHANNEL::ERR;
 }
 
-int8_t string_to_channel_dec(char *tmp_string)
+CHANNEL dec_to_channel(int8_t ch)
 {
-	CHANNEL tmp = string_to_channel(tmp_string);
+	if(ch == 5) return CHANNEL::NONE;
+	else if(ch == 0) return CHANNEL::CH1;
+	else if(ch == 1) return CHANNEL::CH2;
+	else if(ch == 2) return CHANNEL::CH3;
+	else if(ch == 3) return CHANNEL::CH4;
+	else if(ch == 4) return CHANNEL::ALL;
+	else return CHANNEL::ERR;
+}
 
+int8_t channel_to_dec(CHANNEL tmp)
+{
 	if(tmp == CHANNEL::ALL) return 4;
 	else if(tmp == CHANNEL::CH1) return 0;
 	else if(tmp == CHANNEL::CH2) return 1;
 	else if(tmp == CHANNEL::CH3) return 2;
 	else if(tmp == CHANNEL::CH4) return 3;
+	//else if(tmp == CHANNEL::NONE) return 5;
 	else return -1;
+}
+
+int8_t string_to_channel_dec(char *tmp_string)
+{
+	CHANNEL tmp = string_to_channel(tmp_string);
+	return channel_to_dec(tmp);
 }
 
 void scpi_parse(RECEIVER r)
@@ -204,7 +220,63 @@ void scpi_parse(RECEIVER r)
 	}
 	else if(does_string_start_with(tmp_string, "INST"))
 	{
+		tmp_string = remove_to_separator(tmp_string, ':');
+		if(does_string_start_with(tmp_string, "NSEL"))
+		{
+			char tmp_separators[] = {' ', '?'};
+			uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+			tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
 
+			if(*tmp_string == '?')
+			{
+				mySerial.println(channel_to_dec(selected)+1);
+			}
+			else if(*tmp_string == ' ')
+			{
+				++tmp_string;
+				int8_t ch = atoi(tmp_string);
+				selected = dec_to_channel(ch-1);
+				mySerial.println("OK");
+			}
+		}
+		else
+		{
+			if(does_string_start_with(tmp_string, "SEL"))
+			{
+				char tmp_separators[] = {' ', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			}
+			else
+			{
+				tmp_string = buffer + 1;
+				char tmp_separators[] = {' ', '?'};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			}
+
+			if(*tmp_string == '?')
+			{
+				switch(selected)
+				{
+					case CHANNEL::CH1: mySerial.println("CH1"); break;
+					case CHANNEL::CH2: mySerial.println("CH2"); break;
+					case CHANNEL::CH3: mySerial.println("CH3"); break;
+					case CHANNEL::CH4: mySerial.println("CH4"); break;
+					default: break;
+				}
+			}
+			else if(*tmp_string == ' ')
+			{
+				++tmp_string;
+				CHANNEL ch = string_to_channel(tmp_string);
+				if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+				{
+					selected = ch;
+					mySerial.println("OK");
+				}
+			}
+		}
 	}
 	else if(does_string_start_with(tmp_string, "MEAS"))
 	{
@@ -359,7 +431,6 @@ void scpi_parse(RECEIVER r)
 						}
 					}
 				}
-				
 			}
 		}
 		else
@@ -481,11 +552,6 @@ void to_upper_case(char *buf)
 	}
 }
 
-void scpi_execute(RECEIVER r)
-{
-
-}
-
 void cmd_arrived(RECEIVER r)
 {
 	if(strlen(buffer) == 0) return;
@@ -495,7 +561,6 @@ void cmd_arrived(RECEIVER r)
 		{
 			to_upper_case(buffer);
 			scpi_parse(r);
-			scpi_execute(r);
 		}
 	}
 }
