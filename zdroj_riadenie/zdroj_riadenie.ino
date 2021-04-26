@@ -5,7 +5,7 @@ msg2 += "-";\
 Serial.println(msg2)
 
 // include the library code:
-#include <SoftwareSerial.h>
+#include "SoftwareSerial.h"
 #include <LiquidCrystal.h>
 #include <SPI.h>
 #include "variables.h"
