@@ -5,9 +5,14 @@ msg2 += "-";\
 Serial.println(msg2)
 
 // include the library code:
+#include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
 #include <SPI.h>
 
+#define BUFFER_SIZE 50
+SoftwareSerial mySerial(5, 6);
+char buffer[BUFFER_SIZE] = {};
+size_t idx = 0;
 
 #define LOAD 4
 
@@ -366,6 +371,8 @@ void setup() {
    
   // initialize serial:
   Serial.begin(9600); 
+  mySerial.begin(9600);
+  mySerial.println("It works!");
   // reserve 30 bytes for the inputString:
   inputString.reserve(30);
   tmpString.reserve(6);
@@ -466,6 +473,22 @@ void loop() {
     DisplayData();  // prepare and write all data to the LCD screen
 
     check_for_cursor();
+
+  if(mySerial.available())
+  {
+    buffer[idx] = mySerial.read();
+    if(buffer[idx] == '\n')
+    {
+      buffer[idx] = '\0';
+      idx = 0;
+
+      mySerial.println(buffer);
+    }
+    else
+    {
+      ++idx;
+    }
+  }
 
 } // end main program
 
