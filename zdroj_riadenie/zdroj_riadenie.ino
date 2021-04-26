@@ -8,6 +8,7 @@ Serial.println(msg2)
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>
 #include <SPI.h>
+#include "variables.h"
 
 #define BUFFER_SIZE 50
 SoftwareSerial mySerial(5, 6);
@@ -42,72 +43,9 @@ String inputString = "";         // a string to hold incoming data
 String tmpString = ""; // temp string
 boolean stringComplete = false;  // whether the string is complete
 
-float U1setpoint = 11.000; // channel 1 voltage setpoint
-float U2setpoint = 12.000; 
-float U3setpoint = 13.000; 
-float U4setpoint = 14.000; 
-
-float U1meas = 0.001; // channel 1 measured voltage
-float U2meas = 0.002; 
-float U3meas = 0.003; 
-float U4meas = 0.004; 
-
-const float Umax = 30.0001; // maximum voltage
-const float Umin = 0.000; // minimum voltage
-
-float I1setpoint = 0.500; // channel 1 current setpoint
-float I2setpoint = 1.0; 
-float I3setpoint = 1.5; 
-float I4setpoint = 2.0; 
-
-float I1meas = 0.010; // channel 1 measured current
-float I2meas = 0.020; 
-float I3meas = 0.030; 
-float I4meas = 0.040; 
-
-const float Imax = 3.0001; // maximum current
-const float Imin = 0.000; // minimum current
-
-boolean Ch1Enabled = false; // channel 1 output enable
-boolean Ch2Enabled = false;
-boolean Ch3Enabled = false;
-boolean Ch4Enabled = false;
-
-boolean OutEnabled = false; // general power supply output ON/OFF
-
 boolean SettingU = false; // setting voltage active
 boolean SettingI = false; // setting current active
 boolean SettingFuse = false; // setting fuse active
-
-boolean Ch1SetActive = false; // setting of U or I, channel 1 active
-boolean Ch2SetActive = false;
-boolean Ch3SetActive = false;
-boolean Ch4SetActive = false;
-
-boolean Ch1Status = false; // readback of the channel status
-boolean Ch2Status = false;
-boolean Ch3Status = false;
-boolean Ch4Status = false;
-
-boolean Ch1Ilimit = false; // readback of the current limit status
-boolean Ch2Ilimit = false;
-boolean Ch3Ilimit = false;
-boolean Ch4Ilimit = false;
-
-boolean Fuse1Ena = false; // channel 1 electronic fuse enabled
-boolean Fuse2Ena = false;
-boolean Fuse3Ena = false;
-boolean Fuse4Ena = false;
-
-boolean Fuse1Trip = false; // channel 1 electronic fuse readback
-boolean Fuse2Trip = false;
-boolean Fuse3Trip = false;
-boolean Fuse4Trip = false;
-
-boolean Fuse1Reset = false; // channel 1 electronic fuse readback
-boolean Fuse2Reset = false;
-boolean Fuse3Reset = false;
-boolean Fuse4Reset = false;
 
 boolean blinkphase = false; // internal for LED routine
 
