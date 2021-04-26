@@ -108,7 +108,7 @@ public:
   using Print::write;
 
   // public only for easy access by interrupt handlers
-  static inline void handle_interrupt() __attribute__((__always_inline__));
+  static void handle_interrupt();
 };
 
 #endif

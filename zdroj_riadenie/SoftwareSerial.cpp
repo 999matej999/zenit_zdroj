@@ -216,7 +216,7 @@ uint8_t SoftwareSerial::rx_pin_read()
 //
 
 /* static */
-inline void SoftwareSerial::handle_interrupt()
+void SoftwareSerial::handle_interrupt()
 {
   if (active_object)
   {
@@ -233,10 +233,6 @@ ISR(PCINT0_vect)
 
 #if defined(PCINT1_vect)
 ISR(PCINT1_vect, ISR_ALIASOF(PCINT0_vect));
-#endif
-
-#if defined(PCINT2_vect)
-ISR(PCINT2_vect, ISR_ALIASOF(PCINT0_vect));
 #endif
 
 #if defined(PCINT3_vect)

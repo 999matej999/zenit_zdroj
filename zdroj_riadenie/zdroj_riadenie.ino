@@ -293,8 +293,8 @@ void setup() {
     TIMSK2 |= (1 << OCIE2A);
     
   // initialize pin change interrupt for encoder
-    /*PCMSK2 = (1<<PCINT2);
-    PCICR = (1<<PCIE2);*/
+  PCMSK2 |= (1<<PCINT2);
+  PCICR |= (1<<PCIE2);
   
   /*     UPDATE     */  
   load_preset_values_from_eeprom();
@@ -361,8 +361,10 @@ ISR(TIMER2_COMPA_vect)
 
 // interrupt service routine pin change for group D0 to D7
 // 
-/*ISR(PCINT2_vect)        
-{ 
+ISR(PCINT2_vect)
+{
+  SoftwareSerial::handle_interrupt();
+
   EncAprev = EncAcur;
   EncBprev = EncBcur;
   EncAcur = PIND & (1<<PD2);  
@@ -383,7 +385,7 @@ ISR(TIMER2_COMPA_vect)
   }
 
   
-}*/ // end interrupt service routine pin change for group D0 to D7
+} // end interrupt service routine pin change for group D0 to D7
 
 
 
