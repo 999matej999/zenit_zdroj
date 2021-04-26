@@ -214,9 +214,6 @@ void scpi_parse(RECEIVER r)
 	else if(does_string_start_with(tmp_string, "OUTP"))
 	{
 		tmp_string = remove_to_separator(tmp_string, ':');
-		mySerial.print("1>");
-		mySerial.print(tmp_string);
-		mySerial.println("<");
 		if(does_string_start_with(tmp_string, "CVCC") || does_string_start_with(tmp_string, "MODE"))
 		{
 			tmp_string = remove_to_separator(tmp_string, ' ');
@@ -240,13 +237,7 @@ void scpi_parse(RECEIVER r)
 		}
 		else if(does_string_start_with(tmp_string, "OCP"))
 		{
-			mySerial.print("X>");
-			mySerial.print(tmp_string);
-			mySerial.println("<");
 			tmp_string = remove_to_separator(tmp_string, ':');
-			mySerial.print("1>");
-			mySerial.print(tmp_string);
-			mySerial.println("<");
 			if(does_string_start_with(tmp_string, "ALAR") || does_string_start_with(tmp_string, "QUES"))
 			{
 				tmp_string = remove_to_separator(tmp_string, ' ');
@@ -292,10 +283,6 @@ void scpi_parse(RECEIVER r)
 			{
 				if(does_string_start_with(tmp_string, "STAT"))
 				{
-					mySerial.print("2>");
-					mySerial.print(tmp_string);
-					mySerial.println("<");
-
 					char tmp_separators[] = {' ', '?'};
 					uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
 					tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
@@ -308,74 +295,70 @@ void scpi_parse(RECEIVER r)
 					tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
 				}
 
-					mySerial.print("3>");
-					mySerial.print(tmp_string);
-					mySerial.println("<");
+				if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+				{
+					++tmp_string;
 
-					if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+					CHANNEL ch = string_to_channel(tmp_string);
+					if(ch == CHANNEL::NONE) ch = selected;
+
+					bool state = false;
+					switch(ch)
 					{
-						++tmp_string;
-
-						CHANNEL ch = string_to_channel(tmp_string);
-						if(ch == CHANNEL::NONE) ch = selected;
-
-						bool state = false;
-						switch(ch)
-						{
-							case CHANNEL::CH1: state = Fuse1Ena; break;
-							case CHANNEL::CH2: state = Fuse2Ena; break;
-							case CHANNEL::CH3: state = Fuse3Ena; break;
-							case CHANNEL::CH4: state = Fuse4Ena; break;
-							default: break;
-						}
-
-						if(ch != CHANNEL::ALL && ch!= CHANNEL::ERR)
-						{
-							mySerial.println(state ? "ON" : "OFF");
-						}
+						case CHANNEL::CH1: state = Fuse1Ena; break;
+						case CHANNEL::CH2: state = Fuse2Ena; break;
+						case CHANNEL::CH3: state = Fuse3Ena; break;
+						case CHANNEL::CH4: state = Fuse4Ena; break;
+						default: break;
 					}
-					else if(*tmp_string == ' ')
+
+					if(ch != CHANNEL::ALL && ch!= CHANNEL::ERR)
 					{
-						++tmp_string;
+						mySerial.println(state ? "ON" : "OFF");
+					}
+				}
+				else if(*tmp_string == ' ')
+				{
+					++tmp_string;
 
-						if(*tmp_string == 'C' || *tmp_string == 'O')
+					if(*tmp_string == 'C' || *tmp_string == 'O')
+					{
+						CHANNEL ch = CHANNEL::NONE;
+						if(*tmp_string == 'C')
 						{
-							CHANNEL ch = CHANNEL::NONE;
-							if(*tmp_string == 'C')
+							char tmp_ch[4] = {};
+							strncpy(tmp_ch, tmp_string, 3);
+							ch = string_to_channel(tmp_ch);
+							tmp_string += 4;
+						}
+						if(*tmp_string == 'O')
+						{
+							if(ch == CHANNEL::NONE) ch = selected;
+
+							int8_t state = -1;
+
+							if(compare_strings(tmp_string, "ON")) state = 1;
+							else if(compare_strings(tmp_string, "OFF")) state = 0;
+
+							if(state != -1)
 							{
-								char tmp_ch[4] = {};
-								strncpy(tmp_ch, tmp_string, 3);
-								ch = string_to_channel(tmp_ch);
-								tmp_string += 4;
-							}
-							if(*tmp_string == 'O')
-							{
-								if(ch == CHANNEL::NONE) ch = selected;
-
-								int8_t state = -1;
-
-								if(compare_strings(tmp_string, "ON")) state = 1;
-								else if(compare_strings(tmp_string, "OFF")) state = 0;
-
-								if(state != -1)
+								switch(ch)
 								{
-									switch(ch)
-									{
-										case CHANNEL::CH1: Fuse1Ena = state; break;
-										case CHANNEL::CH2: Fuse2Ena = state; break;
-										case CHANNEL::CH3: Fuse3Ena = state; break;
-										case CHANNEL::CH4: Fuse4Ena = state; break;
-										default: break;
-									}
+									case CHANNEL::CH1: Fuse1Ena = state; break;
+									case CHANNEL::CH2: Fuse2Ena = state; break;
+									case CHANNEL::CH3: Fuse3Ena = state; break;
+									case CHANNEL::CH4: Fuse4Ena = state; break;
+									default: break;
+								}
 
-									if(ch != CHANNEL::ALL && ch!= CHANNEL::ERR)
-									{
-										mySerial.println("OK");
-									}
+								if(ch != CHANNEL::ALL && ch!= CHANNEL::ERR)
+								{
+									mySerial.println("OK");
 								}
 							}
 						}
 					}
+				}
 				
 			}
 		}
@@ -383,10 +366,6 @@ void scpi_parse(RECEIVER r)
 		{
 			if(does_string_start_with(tmp_string, "STAT"))
 			{
-				mySerial.print("2>");
-				mySerial.print(tmp_string);
-				mySerial.println("<");
-
 				char tmp_separators[] = {' ', '?'};
 				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
 				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
@@ -399,16 +378,9 @@ void scpi_parse(RECEIVER r)
 				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
 			}
 
-			mySerial.print("3>");
-			mySerial.print(tmp_string);
-			mySerial.println("<");
-
 			if(*(tmp_string - 1) == '?' || *tmp_string == '?')
 			{
 				++tmp_string;
-				mySerial.print("4>");
-				mySerial.print(tmp_string);
-				mySerial.println("<");
 
 				CHANNEL ch = string_to_channel(tmp_string);
 				if(ch == CHANNEL::NONE) ch = selected;
@@ -432,31 +404,19 @@ void scpi_parse(RECEIVER r)
 			else if(*tmp_string == ' ')
 			{
 				++tmp_string;
-				mySerial.print("5>");
-				mySerial.print(tmp_string);
-				mySerial.println("<");
 
 				if(*tmp_string == 'C' || *tmp_string == 'A' || *tmp_string == 'O')
 				{
 					CHANNEL ch = CHANNEL::NONE;
 					if(*tmp_string == 'C' || *tmp_string == 'A')
 					{
-						mySerial.print("6>");
-						mySerial.print(tmp_string);
-						mySerial.println("<");
 						char tmp_ch[4] = {};
 						strncpy(tmp_ch, tmp_string, 3);
 						ch = string_to_channel(tmp_ch);
 						tmp_string += 4;
-						mySerial.print("7>");
-						mySerial.print(tmp_string);
-						mySerial.println("<");
 					}
 					if(*tmp_string == 'O')
 					{
-						mySerial.print("8>");
-						mySerial.print(tmp_string);
-						mySerial.println("<");
 						if(ch == CHANNEL::NONE) ch = selected;
 
 						int8_t state = -1;
