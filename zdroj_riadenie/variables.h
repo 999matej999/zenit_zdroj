@@ -1,6 +1,14 @@
 #ifndef __VARIABLES_H__
 #define __VARIABLES_H__
 
+#include "SoftwareSerial.h"
+
+#define BUFFER_SIZE 50
+
+extern SoftwareSerial mySerial;
+extern char buffer[];
+extern size_t idx;
+
 extern float U1setpoint; // channel 1 voltage setpoint
 extern float U2setpoint; 
 extern float U3setpoint; 

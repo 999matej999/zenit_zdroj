@@ -1,5 +1,8 @@
 #include "variables.h"
 
+SoftwareSerial mySerial(5, 6);
+char buffer[BUFFER_SIZE] = {};
+size_t idx = 0;
 
 float U1setpoint = 11.000; // channel 1 voltage setpoint
 float U2setpoint = 12.000; 

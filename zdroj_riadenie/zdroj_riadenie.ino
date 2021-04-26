@@ -5,16 +5,10 @@ msg2 += "-";\
 Serial.println(msg2)
 
 // include the library code:
-#include "SoftwareSerial.h"
 #include <LiquidCrystal.h>
 #include <SPI.h>
 #include "variables.h"
 #include "scpi.h"
-
-#define BUFFER_SIZE 50
-SoftwareSerial mySerial(5, 6);
-char buffer[BUFFER_SIZE] = {};
-size_t idx = 0;
 
 #define LOAD 4
 
