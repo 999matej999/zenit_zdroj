@@ -103,6 +103,8 @@ void scpi_parse(RECEIVER r)
 
 	if(control == CONTROL::LOCAL) return;
 
+	tmp_string = buffer + 1;
+
 	if(does_string_start_with(buffer, "*IDN?"))
 	{
 		mySerial.println(DEVICE_NAME);

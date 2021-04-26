@@ -360,26 +360,27 @@ ISR(PCINT2_vect)
 {
   SoftwareSerial::handle_interrupt();
 
-  EncAprev = EncAcur;
-  EncBprev = EncBcur;
-  EncAcur = PIND & (1<<PD2);  
-  EncBcur = PIND & (1<<PD3);
-
-  if (EncAprev == false && EncAcur == true) // rising edge of A
+  if(!rw_lock)
   {
-   if (EncBcur == true) 
-    { // decrement
+    EncAprev = EncAcur;
+    EncBprev = EncBcur;
+    EncAcur = PIND & (1<<PD2);  
+    EncBcur = PIND & (1<<PD3);
 
-      EncIncrement = -1;
-    }
-    else
-    { // increment
+    if (EncAprev == false && EncAcur == true) // rising edge of A
+    {
+     if (EncBcur == true) 
+      { // decrement
 
-      EncIncrement = +1;
+        --EncIncrement;
+      }
+      else
+      { // increment
+
+        ++EncIncrement;
+      }
     }
   }
-
-  
 } // end interrupt service routine pin change for group D0 to D7
 
 
@@ -397,9 +398,9 @@ void loop() {
        { moduleToSend = 0; }
     //lcd.setCursor(0, 0); lcd.print(moduleToSend);  
     
-    keyboard();    // keyboard routine. Check if any key was depressed and process it
+    if(!rw_lock) keyboard();    // keyboard routine. Check if any key was depressed and process it
 
-    setVoltageCurrentFuse(); // check if setting mode is active, if yes, modify the trimmed parameter
+    if(!rw_lock) setVoltageCurrentFuse(); // check if setting mode is active, if yes, modify the trimmed parameter
 
     LEDs(); // prepare data for button LEDs
     
@@ -416,7 +417,7 @@ void loop() {
     {
       buffer[idx] = '\0';
       idx = 0;
-      
+
       cmd_arrived(RECEIVER::UART);
     }
     else
