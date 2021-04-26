@@ -121,6 +121,12 @@ int8_t string_to_channel_dec(char *tmp_string)
 	return channel_to_dec(tmp);
 }
 
+float string_to_float(char *tmp_string)
+{
+	//parameters (string, pointer to end of number (not used in case of NULL))
+	return strtod(tmp_string, NULL);
+}
+
 void scpi_parse(RECEIVER r)
 {
 	char *tmp_string = buffer + 1;
@@ -209,7 +215,11 @@ void scpi_parse(RECEIVER r)
 	}
 	else if(does_string_start_with(tmp_string, "APPL"))
 	{
-
+		
+	}
+	else if(does_string_start_with(tmp_string, "CAL"))
+	{
+		
 	}
 	else if(does_string_start_with(tmp_string, "INST"))
 	{
@@ -659,9 +669,311 @@ void scpi_parse(RECEIVER r)
 			}
 		}
 	}
-	else if(does_string_start_with(tmp_string, "SOUR"))
+	else
 	{
+		CHANNEL ch = selected;
+		if(does_string_start_with(tmp_string, "SOUR"))
+		{
+			tmp_string = remove_to_separator(tmp_string, ':');
+			char ch_ = *(tmp_string - 2);
+			ch_ -= '1';
+			if(ch_ >= 0 && ch_ <= 3) ch = dec_to_channel(ch_);
+		}
 
+		if(does_string_start_with(tmp_string, "CURR"))
+		{
+			char tmp_separators[] = {':', '?', ' '};
+			uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+			tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+
+			if(does_string_start_with(tmp_string, "PROT"))
+			{
+				tmp_string = remove_to_separator(tmp_string, ':');
+				if(does_string_start_with(tmp_string, "CLE"))
+				{
+					switch(ch)
+					{
+						case CHANNEL::CH1: Ch1Enabled = false; Fuse1Reset = true; break;
+						case CHANNEL::CH2: Ch2Enabled = false; Fuse2Reset = true; break;
+						case CHANNEL::CH3: Ch3Enabled = false; Fuse3Reset = true; break;
+						case CHANNEL::CH4: Ch4Enabled = false; Fuse4Reset = true; break;
+						default: break;
+					}
+
+					if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+					{
+						mySerial.println("OK");
+					}
+				}
+				else if(does_string_start_with(tmp_string, "STAT"))
+				{
+					char tmp_separators[] = {' ', '?'};
+					uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+					tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+
+					if(*tmp_string == '?')
+					{
+						bool state = false;
+						switch(ch)
+						{
+							case CHANNEL::CH1: state = Fuse1Ena; break;
+							case CHANNEL::CH2: state = Fuse2Ena; break;
+							case CHANNEL::CH3: state = Fuse3Ena; break;
+							case CHANNEL::CH4: state = Fuse4Ena; break;
+							default: break;
+						}
+
+						if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+						{
+							mySerial.println(state ? "ON" : "OFF");
+						}
+					}
+					else if(*tmp_string == ' ')
+					{
+						++tmp_string;
+
+						int8_t state = -1;
+
+						if(compare_strings(tmp_string, "ON")) state = 1;
+						else if(compare_strings(tmp_string, "OFF")) state = 0;
+
+						if(state != -1)
+						{
+							switch(ch)
+							{
+								case CHANNEL::CH1: Fuse1Ena = state; break;
+								case CHANNEL::CH2: Fuse2Ena = state; break;
+								case CHANNEL::CH3: Fuse3Ena = state; break;
+								case CHANNEL::CH4: Fuse4Ena = state; break;
+								default: break;
+							}
+
+							if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+							{
+								mySerial.println("OK");
+							}
+						}
+					}
+				}
+				else if(does_string_start_with(tmp_string, "TRIP"))
+				{
+					if(tmp_string[strlen(tmp_string) - 1] == '?')
+					{
+						bool state = false;
+						switch(ch)
+						{
+							case CHANNEL::CH1: state = Fuse1Trip; break;
+							case CHANNEL::CH2: state = Fuse2Trip; break;
+							case CHANNEL::CH3: state = Fuse3Trip; break;
+							case CHANNEL::CH4: state = Fuse4Trip; break;
+							default: break;
+						}
+
+						if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+						{
+							mySerial.println(state ? "YES" : "NO");
+						}
+					}
+				}
+			}
+			else
+			{
+				if(does_string_start_with(tmp_string, "LEV"))
+				{
+					char tmp_separators[] = {':', '?', ' '};
+					uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+					tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+					if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+				}
+
+				if(does_string_start_with(tmp_string, "IMM"))
+				{
+					char tmp_separators[] = {':', '?', ' '};
+					uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+					tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+					if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+				}
+			
+				if(does_string_start_with(tmp_string, "AMPL"))
+				{
+					char tmp_separators[] = {':', '?', ' '};
+					uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+					tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+					if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+				}
+
+				if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+				{
+					if(*tmp_string == ' ') ++tmp_string;
+					
+					float valueI = -10;
+
+					if(strlen(tmp_string) == 0)
+					{
+						switch(ch)
+						{
+							case CHANNEL::CH1: valueI = I1setpoint; break;
+							case CHANNEL::CH2: valueI = I2setpoint; break;
+							case CHANNEL::CH3: valueI = I3setpoint; break;
+							case CHANNEL::CH4: valueI = I4setpoint; break;
+							default: break;
+						}
+					}
+					else if(compare_strings(tmp_string, "MIN")) valueI = Imin;
+					else if(compare_strings(tmp_string, "MAX")) valueI = Imax;
+
+					if(valueI > -1)
+					{
+						mySerial.println(valueI, 3);
+					}
+				}
+				else if(*(tmp_string - 1) == ' ')
+				{
+					float valueI = -10;
+
+					if(compare_strings(tmp_string, "MIN"))
+					{
+						switch(ch)
+						{
+							case CHANNEL::CH1: I1setpoint = Imin; break;
+							case CHANNEL::CH2: I2setpoint = Imin; break;
+							case CHANNEL::CH3: I3setpoint = Imin; break;
+							case CHANNEL::CH4: I4setpoint = Imin; break;
+							default: break;
+						}
+					}
+					else if(compare_strings(tmp_string, "MAX")){
+						switch(ch)
+						{
+							case CHANNEL::CH1: I1setpoint = Imax; break;
+							case CHANNEL::CH2: I2setpoint = Imax; break;
+							case CHANNEL::CH3: I3setpoint = Imax; break;
+							case CHANNEL::CH4: I4setpoint = Imax; break;
+							default: break;
+						}
+					}
+					else
+					{
+						valueI = string_to_float(tmp_string);
+						switch(ch)
+						{
+							case CHANNEL::CH1: I1setpoint = valueI; break;
+							case CHANNEL::CH2: I2setpoint = valueI; break;
+							case CHANNEL::CH3: I3setpoint = valueI; break;
+							case CHANNEL::CH4: I4setpoint = valueI; break;
+							default: break;
+						}
+					}
+
+					if(valueI > -1)
+					{
+						mySerial.println("OK");
+					}
+				}
+			}
+		}
+		
+		if(does_string_start_with(tmp_string, "VOLT"))
+		{
+			char tmp_separators[] = {':', '?', ' '};
+			uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+			tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+			if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+
+			if(does_string_start_with(tmp_string, "LEV"))
+			{
+				char tmp_separators[] = {':', '?', ' '};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+				if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+			}
+
+			if(does_string_start_with(tmp_string, "IMM"))
+			{
+				char tmp_separators[] = {':', '?', ' '};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+				if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+			}
+		
+			if(does_string_start_with(tmp_string, "AMPL"))
+			{
+				char tmp_separators[] = {':', '?', ' '};
+				uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+				tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+				if(*tmp_string == '?' || *tmp_string == ':' || *tmp_string == ' ') ++tmp_string;
+			}
+
+			if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+			{
+				if(*tmp_string == ' ') ++tmp_string;
+				
+				float valueU = -10;
+
+				if(strlen(tmp_string) == 0)
+				{
+					switch(ch)
+					{
+						case CHANNEL::CH1: valueU = U1setpoint; break;
+						case CHANNEL::CH2: valueU = U2setpoint; break;
+						case CHANNEL::CH3: valueU = U3setpoint; break;
+						case CHANNEL::CH4: valueU = U4setpoint; break;
+						default: break;
+					}
+				}
+				else if(compare_strings(tmp_string, "MIN")) valueU = Umin;
+				else if(compare_strings(tmp_string, "MAX")) valueU = Umax;
+
+				if(valueU > -1)
+				{
+					mySerial.println(valueU, 3);
+				}
+			}
+			else if(*(tmp_string - 1) == ' ')
+			{
+				float valueU = -10;
+
+				if(compare_strings(tmp_string, "MIN"))
+				{
+					switch(ch)
+					{
+						case CHANNEL::CH1: U1setpoint = Umin; break;
+						case CHANNEL::CH2: U2setpoint = Umin; break;
+						case CHANNEL::CH3: U3setpoint = Umin; break;
+						case CHANNEL::CH4: U4setpoint = Umin; break;
+						default: break;
+					}
+				}
+				else if(compare_strings(tmp_string, "MAX")){
+					switch(ch)
+					{
+						case CHANNEL::CH1: U1setpoint = Umax; break;
+						case CHANNEL::CH2: U2setpoint = Umax; break;
+						case CHANNEL::CH3: U3setpoint = Umax; break;
+						case CHANNEL::CH4: U4setpoint = Umax; break;
+						default: break;
+					}
+				}
+				else
+				{
+					valueU = string_to_float(tmp_string);
+					switch(ch)
+					{
+						case CHANNEL::CH1: U1setpoint = valueU; break;
+						case CHANNEL::CH2: U2setpoint = valueU; break;
+						case CHANNEL::CH3: U3setpoint = valueU; break;
+						case CHANNEL::CH4: U4setpoint = valueU; break;
+						default: break;
+					}
+				}
+
+				if(valueU > -1)
+				{
+					mySerial.println("OK");
+				}
+			}
+		}
 	}
 }
 
