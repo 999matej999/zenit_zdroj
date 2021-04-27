@@ -138,6 +138,7 @@ void scpi_parse(RECEIVER r)
 		if(does_string_start_with(tmp_string, "LOC"))
 		{
 			control = CONTROL::LOCAL;
+			rw_lock = false;
 			mySerial.println("OK");
 		}
 		else if(does_string_start_with(tmp_string, "REM"))
@@ -161,7 +162,7 @@ void scpi_parse(RECEIVER r)
 		if(does_string_start_with(tmp_string, "COMM"))
 		{
 			tmp_string = remove_to_separator(tmp_string, ':');
-			if(does_string_start_with(tmp_string, "RS232"))
+			if(does_string_start_with(tmp_string, "UART"))
 			{
 				tmp_string = remove_to_separator(tmp_string, ':');
 				if(does_string_start_with(tmp_string, "BAUD"))
@@ -209,7 +210,7 @@ void scpi_parse(RECEIVER r)
 			tmp_string = remove_before_separator(tmp_string, '?');
 			if(*tmp_string == '?')
 			{
-				mySerial.println(DEVICE_VERSION);
+				mySerial.println(SCPI_VERSION);
 			}
 		}
 	}
