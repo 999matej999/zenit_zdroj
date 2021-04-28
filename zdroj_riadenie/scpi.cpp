@@ -946,7 +946,7 @@ void scpi_parse(RECEIVER r)
 				}
 				else if(*(tmp_string - 1) == ' ')
 				{
-					float valueI = -10;
+					float valueI = 0;
 
 					if(compare_strings(tmp_string, "MIN"))
 					{
@@ -982,10 +982,7 @@ void scpi_parse(RECEIVER r)
 						}
 					}
 
-					if(valueI > -1)
-					{
-						mySerial.println("OK");
-					}
+					mySerial.println("OK");
 				}
 			}
 		}
@@ -1048,7 +1045,7 @@ void scpi_parse(RECEIVER r)
 			}
 			else if(*(tmp_string - 1) == ' ')
 			{
-				float valueU = -10;
+				float valueU = 0;
 
 				if(compare_strings(tmp_string, "MIN"))
 				{
@@ -1084,10 +1081,7 @@ void scpi_parse(RECEIVER r)
 					}
 				}
 
-				if(valueU > -1)
-				{
-					mySerial.println("OK");
-				}
+				mySerial.println("OK");
 			}
 		}
 	}
