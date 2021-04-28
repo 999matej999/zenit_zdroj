@@ -216,7 +216,122 @@ void scpi_parse(RECEIVER r)
 	}
 	else if(does_string_start_with(tmp_string, "APPL"))
 	{
-		
+		char tmp_separators[] = {' ', '?'};
+		uint8_t tmp_separators_count = sizeof(tmp_separators)/sizeof(char);
+		tmp_string = remove_string_before_separators(tmp_string, tmp_separators, tmp_separators_count);
+		if(*(tmp_string - 1) == '?' || *tmp_string == '?')
+		{
+			++tmp_string;
+
+			CHANNEL ch = string_to_channel(tmp_string);
+			if(ch == CHANNEL::NONE) ch = selected;
+
+			float valueU = 0, valueI = 0;
+			switch(ch)
+			{
+				case CHANNEL::CH1: valueU = U1setpoint; valueI = I1setpoint; break;
+				case CHANNEL::CH2: valueU = U2setpoint; valueI = I2setpoint; break;
+				case CHANNEL::CH3: valueU = U3setpoint; valueI = I3setpoint; break;
+				case CHANNEL::CH4: valueU = U4setpoint; valueI = I4setpoint; break;
+				default: break;
+			}
+
+			if(ch != CHANNEL::ALL && ch!= CHANNEL::ERR)
+			{
+				mySerial.print(valueU, 3);
+				mySerial.print(",");
+				mySerial.println(valueI, 3);
+			}
+		}
+		else if(*tmp_string == ' ')
+		{
+			++tmp_string;
+
+			CHANNEL ch = CHANNEL::NONE;
+
+			if(*tmp_string == 'C')
+			{
+				char tmp_ch[4] = {};
+				strncpy(tmp_ch, tmp_string, 3);
+				ch = string_to_channel(tmp_ch);
+				tmp_string += 4;
+			}
+			if(ch == CHANNEL::NONE) ch = selected;
+
+			float valueU = 0;
+			if(compare_string_to_lenght(tmp_string, "MIN", 3))
+			{
+				switch(ch)
+				{
+					case CHANNEL::CH1: U1setpoint = Umin; break;
+					case CHANNEL::CH2: U2setpoint = Umin; break;
+					case CHANNEL::CH3: U3setpoint = Umin; break;
+					case CHANNEL::CH4: U4setpoint = Umin; break;
+					default: break;
+				}
+			}
+			else if(compare_string_to_lenght(tmp_string, "MAX", 3)){
+				switch(ch)
+				{
+					case CHANNEL::CH1: U1setpoint = Umax; break;
+					case CHANNEL::CH2: U2setpoint = Umax; break;
+					case CHANNEL::CH3: U3setpoint = Umax; break;
+					case CHANNEL::CH4: U4setpoint = Umax; break;
+					default: break;
+				}
+			}
+			else
+			{
+				valueU = atof(tmp_string);
+				switch(ch)
+				{
+					case CHANNEL::CH1: U1setpoint = valueU; break;
+					case CHANNEL::CH2: U2setpoint = valueU; break;
+					case CHANNEL::CH3: U3setpoint = valueU; break;
+					case CHANNEL::CH4: U4setpoint = valueU; break;
+					default: break;
+				}
+			}
+
+			tmp_string = remove_to_separator(tmp_string, ',');
+
+
+			float valueI = 0;
+			if(compare_string_to_lenght(tmp_string, "MIN", 3))
+			{
+				switch(ch)
+				{
+					case CHANNEL::CH1: I1setpoint = Imin; break;
+					case CHANNEL::CH2: I2setpoint = Imin; break;
+					case CHANNEL::CH3: I3setpoint = Imin; break;
+					case CHANNEL::CH4: I4setpoint = Imin; break;
+					default: break;
+				}
+			}
+			else if(compare_string_to_lenght(tmp_string, "MAX", 3)){
+				switch(ch)
+				{
+					case CHANNEL::CH1: I1setpoint = Imax; break;
+					case CHANNEL::CH2: I2setpoint = Imax; break;
+					case CHANNEL::CH3: I3setpoint = Imax; break;
+					case CHANNEL::CH4: I4setpoint = Imax; break;
+					default: break;
+				}
+			}
+			else
+			{
+				valueI = atof(tmp_string);
+				switch(ch)
+				{
+					case CHANNEL::CH1: I1setpoint = valueI; break;
+					case CHANNEL::CH2: I2setpoint = valueI; break;
+					case CHANNEL::CH3: I3setpoint = valueI; break;
+					case CHANNEL::CH4: I4setpoint = valueI; break;
+					default: break;
+				}
+			}
+			mySerial.println("OK");
+		}
 	}
 	else if(does_string_start_with(tmp_string, "CAL"))
 	{
@@ -414,7 +529,7 @@ void scpi_parse(RECEIVER r)
 					default: break;
 				}
 
-				if(ch != CHANNEL::ALL && ch!= CHANNEL::NONE && ch!= CHANNEL::ERR)
+				if(ch != CHANNEL::ALL && ch != CHANNEL::ERR)
 				{
 					mySerial.println(valueU, 3);
 				}
