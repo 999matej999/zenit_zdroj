@@ -605,7 +605,28 @@ void sendAllOff()
     if (SettingFuse) {led7 = orange;} else {led7 = none;}
 
     // LED output ON/OFF button
-    if (OutEnabled) {led8 = green;} else {led8 = none;}
+    if (OutEnabled)
+    {
+      if(rw_lock)
+      {
+        led8 = orange;
+      }
+      else
+      {
+        led8 = green;        
+      }
+    }
+    else
+    {
+      if(rw_lock)
+      {
+        led8 = red;
+      }
+      else
+      {
+        led8 = none;
+      }
+    }
     
  }  // end prepare button LEDs routine
  
